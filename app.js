@@ -60,6 +60,40 @@ if (reducedMotion) {
   videos.forEach((v) => io.observe(v));
 }
 
+// Numbers count up the first time they scroll into view. The final value is already in the HTML.
+const counters = document.querySelectorAll("[data-to]");
+if (!reducedMotion && "IntersectionObserver" in window) {
+  const fmt = (el, v) => {
+    const dec = Number(el.dataset.decimals || 0);
+    el.textContent = (el.dataset.prefix || "") + v.toFixed(dec) + (el.dataset.suffix || "");
+  };
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(({ target, isIntersecting }) => {
+      if (!isIntersecting) return;
+      io.unobserve(target);
+      const to = Number(target.dataset.to), t0 = performance.now(), dur = 1400;
+      const step = (now) => {
+        const p = Math.min((now - t0) / dur, 1);
+        fmt(target, to * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }, { threshold: 0.6 });
+  counters.forEach((c) => io.observe(c));
+}
+
+// Buttons lean toward the cursor a little.
+if (!reducedMotion && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+  document.querySelectorAll(".btn").forEach((b) => {
+    b.addEventListener("pointermove", (e) => {
+      const r = b.getBoundingClientRect();
+      b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.22}px, ${(e.clientY - r.top - r.height / 2) * 0.3}px)`;
+    });
+    b.addEventListener("pointerleave", () => { b.style.transform = ""; });
+  });
+}
+
 async function start() {
   measure();
   let scene = null;
@@ -72,7 +106,7 @@ async function start() {
       new Promise((r) => setTimeout(r, 2500)),
     ]);
     const { createScene } = await import("./scene.js");
-    scene = createScene(document.getElementById("scene"), { reducedMotion });
+    scene = await createScene(document.getElementById("scene"), { reducedMotion });
   } catch (err) {
     document.documentElement.classList.add("no-webgl");
   }

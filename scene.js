@@ -180,13 +180,134 @@ function galaxy(N) {
   return rotate(out, 0.55, 0);
 }
 
-function buildShapes(N) {
-  const name = fromCanvas(N, 1600, 300, (g, w, h) => {
+// A photo (transparent background) turned into a particle hologram: denser where it is bright or has detail.
+function fromImage(N, img, size) {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, w, h).data;
+  const lum = new Float32Array(w * h), alpha = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
+    alpha[i] = d[i * 4 + 3];
+  }
+  // Local contrast (pixel vs. its neighbourhood) keeps eyes, brows and hair curls readable;
+  // global brightness keeps the overall light and shadow.
+  const sum = new Float64Array((w + 1) * (h + 1));
+  let lo = 1, hi = 0;
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      row += lum[i];
+      sum[(y + 1) * (w + 1) + x + 1] = sum[y * (w + 1) + x + 1] + row;
+      if (alpha[i] >= 128) { if (lum[i] < lo) lo = lum[i]; if (lum[i] > hi) hi = lum[i]; }
+    }
+  }
+  const rad = Math.round(w / 32);
+  const mean = (x, y) => {
+    const x0 = Math.max(0, x - rad), y0 = Math.max(0, y - rad), x1 = Math.min(w, x + rad + 1), y1 = Math.min(h, y + rad + 1);
+    return (sum[y1 * (w + 1) + x1] - sum[y0 * (w + 1) + x1] - sum[y1 * (w + 1) + x0] + sum[y0 * (w + 1) + x0]) / ((x1 - x0) * (y1 - y0));
+  };
+  const cand = [];
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (alpha[i] < 128) continue;
+      const global = (lum[i] - lo) / (hi - lo || 1);
+      const local = Math.min(1, Math.max(0, 0.5 + (lum[i] - mean(x, y)) * 3.2));
+      const v = 0.5 * global + 0.5 * local;
+      const rim = alpha[i - 2] < 128 || alpha[i + 2] < 128 || alpha[i - 2 * w] < 128 || alpha[i + 2 * w] < 128 ? 0.55 : 0;
+      const fade = Math.min(1, (h - y) / (h * 0.16)); // soften the cut at the bottom of the photo
+      const body = y > h * 0.52 ? 0.4 : 1; // spend the particles on the face and hair, not the sweater
+      cand.push(i, Math.min(1, 0.02 + v ** 2.4 * 1.15 + rim) * fade * body);
+    }
+  }
+  if (cand.length < 4000) return null;
+  const out = new Float32Array(N * 3), k = size / h;
+  let n = 0, guard = 0;
+  while (n < N && guard++ < N * 80) {
+    const j = Math.floor(R() * (cand.length / 2)) * 2;
+    if (R() > cand[j + 1]) continue;
+    const i = cand[j], x = i % w, y = (i / w) | 0;
+    out[n * 3] = (x + R() - w / 2) * k;
+    out[n * 3 + 1] = -(y + R() - h / 2) * k;
+    out[n * 3 + 2] = (lum[i] - 0.45) * 0.55 + gauss() * 0.03;
+    n++;
+  }
+  for (; n < N; n++) out.copyWithin(n * 3, Math.floor(R() * n) * 3, Math.floor(R() * n) * 3 + 3);
+  return out;
+}
+
+// NGN Hacks: a wireframe globe with arcs between cities.
+function globe(N) {
+  const out = new Float32Array(N * 3), r = 1.6;
+  const unit = (lat, lon) => [Math.cos(lat) * Math.cos(lon), Math.sin(lat), Math.cos(lat) * Math.sin(lon)];
+  const cities = Array.from({ length: 18 }, () => unit(Math.asin(R() * 1.6 - 0.8), R() * TAU));
+  const arcs = Array.from({ length: 18 }, () => [cities[Math.floor(R() * 18)], cities[Math.floor(R() * 18)]]);
+  for (let i = 0; i < N; i++) {
+    const p = R();
+    let v, rr = r;
+    if (p < 0.5) {
+      v = R() < 0.5
+        ? unit((Math.floor(R() * 7) - 3) * (Math.PI / 9), R() * TAU)
+        : unit((R() - 0.5) * Math.PI, Math.floor(R() * 12) * (TAU / 12));
+    } else if (p < 0.82) {
+      const [a, b] = arcs[Math.floor(R() * arcs.length)], t = R();
+      v = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+      const len = Math.hypot(v[0], v[1], v[2]) || 1;
+      v = v.map((q) => q / len);
+      rr = r * (1 + 0.32 * Math.sin(Math.PI * t));
+    } else {
+      const c = cities[Math.floor(R() * cities.length)];
+      v = [c[0] + gauss() * 0.03, c[1] + gauss() * 0.03, c[2] + gauss() * 0.03];
+      rr = r * 1.01;
+    }
+    out[i * 3] = v[0] * rr; out[i * 3 + 1] = v[1] * rr; out[i * 3 + 2] = v[2] * rr;
+  }
+  return rotate(out, 0.35, 0);
+}
+
+// Experience: a double helix.
+function helix(N) {
+  const out = new Float32Array(N * 3), turns = 2.2, H = 4.2, r = 0.85, rungs = 22;
+  for (let i = 0; i < N; i++) {
+    let x, y, z;
+    if (R() < 0.7) {
+      const t = R(), a = t * TAU * turns + (R() < 0.5 ? 0 : Math.PI);
+      x = Math.cos(a) * r + gauss() * 0.03; z = Math.sin(a) * r + gauss() * 0.03; y = (t - 0.5) * H;
+    } else {
+      const t = (Math.floor(R() * rungs) + 0.5) / rungs, a = t * TAU * turns, u = R() * 2 - 1;
+      x = Math.cos(a) * r * u; z = Math.sin(a) * r * u; y = (t - 0.5) * H + gauss() * 0.01;
+    }
+    // lean it slightly to the side
+    const tz = 0.32;
+    out[i * 3] = x * Math.cos(tz) - y * Math.sin(tz);
+    out[i * 3 + 1] = x * Math.sin(tz) + y * Math.cos(tz);
+    out[i * 3 + 2] = z;
+  }
+  return rotate(out, 0.15, 0);
+}
+
+function textShape(N, text, size, font) {
+  return fromCanvas(N, 1400, 320, (g, w, h) => {
     g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = `800 ${h * 0.78}px Archivo, "Arial Black", sans-serif`;
+    g.font = font(h);
     if ("fontStretch" in g) g.fontStretch = "expanded";
-    g.fillText("AMIRALI", w / 2, h / 2);
-  }, { size: 6, fitWidth: true, depth: 0.18 });
+    g.fillText(text, w / 2, h / 2);
+  }, { size, fitWidth: true, depth: 0.2 });
+}
+
+async function buildShapes(N) {
+  let portrait = null;
+  try {
+    const img = new Image();
+    img.src = "media/me-cutout.png";
+    await img.decode();
+    portrait = fromImage(N, img, 3.8);
+  } catch (e) { /* fall back to a sphere */ }
 
   const hand = fromCanvas(N, 520, 520, (g, w, h) => {
     g.textAlign = "center"; g.textBaseline = "middle";
@@ -195,79 +316,95 @@ function buildShapes(N) {
   }, { size: 3.7, depth: 0.22 });
 
   return [
-    name || sphere(N),
-    sphere(N),
+    portrait || sphere(N),
+    textShape(N, "500K+", 4.4, (h) => `800 ${h * 0.8}px Archivo, "Arial Black", sans-serif`) || sphere(N),
+    globe(N),
+    coin(N),
+    textShape(N, "“”", 3.2, (h) => `700 ${h * 1.5}px Georgia, "Times New Roman", serif`) || sphere(N),
     voiceRing(N),
     hand || sphere(N, 1.5),
     clapWave(N),
-    coin(N),
     hudRings(N),
+    helix(N),
     galaxy(N),
   ];
 }
 
-// Per-shape look: two colours (body, sparkle) and how much it sways.
+// Per-shape look: body colour, sparkle colour, sway, hologram scanlines.
 const LOOKS = [
-  { a: "#3be8ff", b: "#ffb22e", sway: 0.12 },
-  { a: "#3be8ff", b: "#ffb22e", sway: 1.0 },
-  { a: "#ffb22e", b: "#fff1d6", sway: 0.45 },
-  { a: "#3be8ff", b: "#e9fdff", sway: 0.3 },
-  { a: "#e9fdff", b: "#3be8ff", sway: 0.35 },
-  { a: "#e9b949", b: "#4fd18b", sway: 0.8 },
-  { a: "#3be8ff", b: "#ffb22e", sway: 0.5 },
-  { a: "#3be8ff", b: "#ffb22e", sway: 0.6 },
+  { a: "#3be8ff", b: "#ffb22e", sway: 0.32, scan: 0.6, size: 1.25 },
+  { a: "#3be8ff", b: "#ffb22e", sway: 0.22, scan: 0.25 },
+  { a: "#3be8ff", b: "#ffb22e", sway: 1.0, scan: 0.25 },
+  { a: "#e9b949", b: "#4fd18b", sway: 0.8, scan: 0.2 },
+  { a: "#ffb22e", b: "#e9fdff", sway: 0.3, scan: 0.25 },
+  { a: "#ffb22e", b: "#fff1d6", sway: 0.45, scan: 0.2 },
+  { a: "#3be8ff", b: "#e9fdff", sway: 0.3, scan: 0.5 },
+  { a: "#e9fdff", b: "#3be8ff", sway: 0.35, scan: 0.2 },
+  { a: "#3be8ff", b: "#ffb22e", sway: 0.5, scan: 0.6 },
+  { a: "#3be8ff", b: "#ffb22e", sway: 0.6, scan: 0.25 },
+  { a: "#3be8ff", b: "#ffb22e", sway: 0.6, scan: 0.2 },
 ];
 
 const VERT = /* glsl */ `
   attribute float aRand;
-  uniform float uSize, uPR, uTime, uCalm;
+  uniform float uSize, uPR, uTime, uCalm, uPush, uSizeK;
+  uniform vec3 uPointer;
   varying float vRand, vFade;
   void main() {
     vec3 p = position;
     float w = uTime * 0.9 + aRand * 60.0;
     p += (1.0 - uCalm) * 0.025 * vec3(sin(w), cos(w * 1.3), sin(w * 0.7));
+    // Particles part around the cursor.
+    vec2 d = p.xy - uPointer.xy;
+    float f = uPush * smoothstep(0.6, 0.0, length(d));
+    p.xy += normalize(d + 0.0001) * f * 0.38;
+    p.z += f * 0.45;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
-    gl_PointSize = uSize * uPR * (0.55 + aRand * 0.9) * (6.0 / -mv.z);
+    gl_PointSize = uSize * uSizeK * uPR * (0.55 + aRand * 0.9) * (6.0 / -mv.z) * (1.0 + f * 0.8);
     vRand = aRand;
     vFade = clamp((-mv.z - 1.5) / 3.0, 0.35, 1.0);
   }`;
 
 const FRAG = /* glsl */ `
   uniform vec3 uColA, uColB;
-  uniform float uAlpha;
+  uniform float uAlpha, uScan, uTime;
   varying float vRand, vFade;
   void main() {
     float d = length(gl_PointCoord - 0.5);
     float a = smoothstep(0.5, 0.0, d);
     vec3 col = vRand > 0.93 ? uColB : uColA;
-    gl_FragColor = vec4(col, a * uAlpha * vFade);
+    float scan = 1.0 - uScan * 0.45 * (0.5 + 0.5 * sin(gl_FragCoord.y * 0.6 - uTime * 7.0));
+    gl_FragColor = vec4(col, a * uAlpha * vFade * scan);
   }`;
 
-export function createScene(canvas, { reducedMotion }) {
+export async function createScene(canvas, { reducedMotion }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: "high-performance" });
   const small = Math.min(window.innerWidth, window.innerHeight) < 700;
-  const N = small ? 7000 : 14000;
-  const shapes = buildShapes(N);
+  const N = small ? 9000 : 22000;
+  const shapes = await buildShapes(N);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
   camera.position.set(0, 0, 6);
 
   const geo = new THREE.BufferGeometry();
-  const pos = new Float32Array(shapes[0]);
+  const pos = new Float32Array(N * 3);
   const rand = new Float32Array(N);
   const scatter = new Float32Array(N * 3);
+  const start = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
     rand[i] = R();
     scatter[i * 3] = gauss() * 1.4; scatter[i * 3 + 1] = gauss() * 1.4; scatter[i * 3 + 2] = gauss() * 1.4;
+    start[i * 3] = gauss() * 9; start[i * 3 + 1] = gauss() * 6; start[i * 3 + 2] = gauss() * 4 - 1;
   }
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
   geo.setAttribute("aRand", new THREE.BufferAttribute(rand, 1));
 
   const uniforms = {
-    uSize: { value: small ? 2.6 : 2.3 }, uPR: { value: 1 }, uTime: { value: 0 },
-    uCalm: { value: reducedMotion ? 1 : 0 }, uAlpha: { value: 0.9 },
+    uSize: { value: small ? 2.4 : 2.1 }, uPR: { value: 1 }, uTime: { value: 0 },
+    uCalm: { value: reducedMotion ? 1 : 0 }, uAlpha: { value: 0.9 }, uScan: { value: 1 },
+    uPush: { value: 0 }, uSizeK: { value: 1 }, uPointer: { value: new THREE.Vector3(99, 99, 0) },
     uColA: { value: new THREE.Color(LOOKS[0].a) }, uColB: { value: new THREE.Color(LOOKS[0].b) },
   };
   const mat = new THREE.ShaderMaterial({
@@ -290,7 +427,10 @@ export function createScene(canvas, { reducedMotion }) {
   dustGeo.setAttribute("aRand", new THREE.BufferAttribute(dustRand, 1));
   const dustMat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: { ...uniforms, uAlpha: { value: 0.45 }, uColA: { value: new THREE.Color("#5f8a9c") }, uColB: { value: new THREE.Color("#3be8ff") } },
+    uniforms: {
+      ...uniforms, uAlpha: { value: 0.45 }, uScan: { value: 0 }, uPush: { value: 0 }, uSizeK: { value: 1 },
+      uColA: { value: new THREE.Color("#5f8a9c") }, uColB: { value: new THREE.Color("#3be8ff") },
+    },
   });
   const dust = new THREE.Points(dustGeo, dustMat);
   scene.add(dust);
@@ -310,24 +450,30 @@ export function createScene(canvas, { reducedMotion }) {
     const obj = wide ? Math.min(1, viewH / 5.4) : Math.min(viewW / 4.9, 0.72);
     const side = wide ? { x: viewW * 0.24, y: 0, s: obj } : { x: 0, y: viewH * 0.24, s: obj };
     layouts = [
-      // Short laptop screens: the headline fills more of the height, so lift and shrink the name.
-      wide
-        ? (h < 780 ? { x: 0, y: viewH * 0.3, s: Math.min(0.8, (viewW * 0.56) / 6) } : { x: 0, y: viewH * 0.17, s: Math.min(1, (viewW * 0.72) / 6) })
-        : { x: 0, y: viewH * 0.22, s: (viewW * 0.86) / 6 },
-      side, side, side, side, side, side,
+      wide ? { x: viewW * 0.22, y: -viewH * 0.02, s: Math.min(1.2, viewH / 4.2, (viewW * 0.4) / 3.8) }
+           : { x: 0, y: viewH * 0.24, s: Math.min((viewW * 0.86) / 3.8, (viewH * 0.44) / 3.8) },
+      wide ? { x: viewW * 0.24, y: 0, s: Math.min(1, (viewW * 0.42) / 4.4) } : { x: 0, y: viewH * 0.26, s: (viewW * 0.8) / 4.4 },
+      side, side, side, side, side, side, side,
+      wide && w >= 1100 ? { ...side, x: viewW * 0.36, s: side.s * 0.85 } : side,
       { x: 0, y: -viewH * (wide ? 0.34 : 0.3), s: wide ? 1.2 : obj * 1.2 },
     ];
   }
 
-  const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+  // Cursor in normalised screen coords; projected onto the shape's plane each frame.
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0, active: false };
   window.addEventListener("pointermove", (e) => {
     mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
+    mouse.active = true;
   }, { passive: true });
+  document.addEventListener("pointerleave", () => { mouse.active = false; });
+  window.addEventListener("blur", () => { mouse.active = false; });
+  const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  const hit = new THREE.Vector3(), ndc = new THREE.Vector2();
 
   const colA = new THREE.Color(), colB = new THREE.Color();
   const tmpA = new THREE.Color(), tmpB = new THREE.Color();
-  let morph = 0, shown = -1, lastBlend = -1;
+  let morph = 0, lastBlend = -1, intro = reducedMotion ? 1 : 0;
   const smooth = (t) => t * t * (3 - 2 * t);
 
   function frame(target, dt, time) {
@@ -339,10 +485,18 @@ export function createScene(canvas, { reducedMotion }) {
     const t = smooth(Math.min(Math.max((m - i - 0.2) / 0.6, 0), 1));
     const burst = Math.sin(Math.PI * t) * (reducedMotion ? 0.3 : 1);
 
+    // On load the particles fly in from a wide cloud and assemble.
+    const assembling = intro < 1;
+    if (assembling) intro = Math.min(1, intro + dt / 2.6);
+    const e = 1 - Math.pow(1 - intro, 3);
+
     const blendKey = i * 10 + t;
-    if (blendKey !== lastBlend) {
+    if (blendKey !== lastBlend || assembling) {
       const A = shapes[i], B = shapes[i + 1];
-      for (let j = 0; j < pos.length; j++) pos[j] = A[j] + (B[j] - A[j]) * t + scatter[j] * burst;
+      for (let j = 0; j < pos.length; j++) {
+        const v = A[j] + (B[j] - A[j]) * t + scatter[j] * burst;
+        pos[j] = assembling ? start[j] + (v - start[j]) * e : v;
+      }
       geo.attributes.position.needsUpdate = true;
       lastBlend = blendKey;
     }
@@ -351,25 +505,32 @@ export function createScene(canvas, { reducedMotion }) {
     group.position.set(la.x + (lb.x - la.x) * t, la.y + (lb.y - la.y) * t, 0);
     group.scale.setScalar(la.s + (lb.s - la.s) * t);
 
-    const look = { a: LOOKS[i], b: LOOKS[i + 1] };
-    colA.copy(tmpA.set(look.a.a)).lerp(tmpB.set(look.b.a), t);
-    colB.copy(tmpA.set(look.a.b)).lerp(tmpB.set(look.b.b), t);
+    const a = LOOKS[i], b = LOOKS[i + 1];
+    colA.copy(tmpA.set(a.a)).lerp(tmpB.set(b.a), t);
+    colB.copy(tmpA.set(a.b)).lerp(tmpB.set(b.b), t);
     uniforms.uColA.value.copy(colA);
     uniforms.uColB.value.copy(colB);
+    uniforms.uScan.value = reducedMotion ? 0 : a.scan + (b.scan - a.scan) * t;
+    uniforms.uSizeK.value = (a.size || 1) + ((b.size || 1) - (a.size || 1)) * t;
 
-    const sway = look.a.sway + (look.b.sway - look.a.sway) * t;
+    const sway = a.sway + (b.sway - a.sway) * t;
     mouse.x += (mouse.tx - mouse.x) * 0.05;
     mouse.y += (mouse.ty - mouse.y) * 0.05;
     const drift = reducedMotion ? 0 : Math.sin(time * 0.3) * 0.6 * sway;
     group.rotation.set(mouse.y * 0.18, drift + mouse.x * 0.3, 0);
     dust.rotation.y = reducedMotion ? 0 : time * 0.01;
 
+    // Push particles away from the cursor (in the group's own space).
+    group.updateMatrixWorld();
+    ndc.set(mouse.tx, -mouse.ty);
+    ray.setFromCamera(ndc, camera);
+    if (ray.ray.intersectPlane(plane, hit)) uniforms.uPointer.value.copy(group.worldToLocal(hit));
+    const pushTarget = mouse.active && !reducedMotion ? 1 : 0;
+    uniforms.uPush.value += (pushTarget - uniforms.uPush.value) * (1 - Math.exp(-dt * 6));
+
     uniforms.uTime.value = time;
     renderer.render(scene, camera);
-
-    const nearest = Math.round(m);
-    if (nearest !== shown) shown = nearest;
-    return nearest;
+    return Math.round(m);
   }
 
   layout();
