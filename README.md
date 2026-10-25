@@ -1,6 +1,6 @@
-# off9rid.github.io
+# Portfolio
 
-My portfolio: **https://off9rid.github.io**
+My portfolio: **https://amiralizhian.vercel.app**
 
 A single page where one cloud of 14,000 particles reshapes itself as you scroll: my name, then a sphere, Friday's voice ring, a hand for HALO, a clap waveform, a coin, the Cortex HUD rings and a galaxy to finish.
 
@@ -23,4 +23,4 @@ python3 -m http.server -d . 8000   # then open http://localhost:8000
 - Particle shapes, colours and placement: `scene.js` (`buildShapes`, `LOOKS`, `layout`)
 - Videos and images: `media/`
 
-Pushing to `main` redeploys the site through GitHub Pages in about a minute.
+Deploy: `vercel deploy --prod` from this folder.
