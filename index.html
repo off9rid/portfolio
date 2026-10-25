@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amirali Zhian · AI builder</title>
+  <meta name="description" content="Amirali Zhian, 18, Toronto. I build AI tools that give people their time back: Friday, HALO, Clap Launcher and Cortex.">
+  <meta name="theme-color" content="#02060b">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Amirali Zhian · AI builder">
+  <meta property="og:description" content="I build AI tools that give people their time back.">
+  <meta property="og:url" content="https://off9rid.github.io/">
+  <meta property="og:image" content="https://off9rid.github.io/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Geist:wght@400;500&family=JetBrains+Mono&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js",
+        "lenis": "https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.mjs"
+      }
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="bar">
+    <a class="mark" href="#top" aria-label="Amirali Zhian, back to top">
+      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="58 8"/><circle cx="16" cy="16" r="4" fill="currentColor"/></svg>
+      <span>Amirali Zhian</span>
+    </a>
+    <nav aria-label="Main">
+      <a href="#friday">Work</a>
+      <a href="#cortex">Cortex</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <aside class="hud" aria-hidden="true">
+    <span class="hud-index">00</span>
+    <span class="hud-track"><span class="hud-fill"></span></span>
+    <span class="hud-name">Hello</span>
+  </aside>
+
+  <main id="main">
+    <section id="top" class="hero" data-name="Hello">
+      <p class="kicker reveal">off9rid · Toronto · 18</p>
+      <h1 class="hero-title reveal">I build AI tools that give people their <em>time</em> back.</h1>
+      <p class="hero-sub reveal">Voice assistants, gesture control, a terminal that opens when I clap. Built fast, used every day.</p>
+      <a class="scroll-cue" href="#about"><span>Scroll</span><svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><path d="M7 1v17M1 12l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></a>
+    </section>
+
+    <section id="about" class="statement" data-name="Mind">
+      <div class="copy">
+        <p class="index reveal">01 · How I work</p>
+        <h2 class="reveal">Most of what I build starts as a tool for my own life.</h2>
+        <p class="reveal">Then other people want it. I go from idea to working product in days, not months, and post the whole build on <a href="https://instagram.com/amirbuildsai">@amirbuildsai</a>.</p>
+        <ul class="facts reveal">
+          <li><strong>5</strong><span>projects shipped</span></li>
+          <li><strong>1.6K</strong><span>views on one reel in its first day</span></li>
+          <li><strong>Days</strong><span>from idea to working build</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="friday" class="project" data-name="Friday">
+      <div class="copy">
+        <p class="index reveal">02 · My business</p>
+        <h2 class="reveal">Friday</h2>
+        <p class="lede reveal">A personal AI assistant for your Mac, set up for you.</p>
+        <p class="reveal">It briefs you every morning, tracks your deadlines, remembers what matters and runs your apps by voice. Powered by Claude, installed done-for-you on each client's own Mac.</p>
+        <ul class="tags reveal"><li>Claude</li><li>Voice</li><li>macOS</li><li>three.js</li></ul>
+        <div class="links reveal">
+          <a class="btn" href="https://meetfriday.vercel.app">Visit Friday</a>
+          <a class="link" href="https://github.com/off9rid/friday">Code</a>
+        </div>
+      </div>
+      <figure class="media media--wide reveal">
+        <video src="media/friday.mp4" poster="media/friday.jpg" width="960" height="530" muted loop playsinline preload="none"></video>
+        <figcaption>Friday's morning briefing</figcaption>
+      </figure>
+    </section>
+
+    <section id="halo" class="project" data-name="HALO">
+      <div class="copy">
+        <p class="index reveal">03 · Open source</p>
+        <h2 class="reveal">HALO</h2>
+        <p class="lede reveal">Control your Mac with your hands.</p>
+        <p class="reveal">The webcam tracks your hand on-device. Pinch to grab and drag windows, make a fist to pause music, swipe to switch desktops, peace sign for a screenshot. No extra hardware, nothing sent to the cloud.</p>
+        <ul class="tags reveal"><li>Python</li><li>MediaPipe</li><li>OpenCV</li><li>JXA</li></ul>
+        <div class="links reveal">
+          <a class="btn" href="https://github.com/off9rid/halo">View on GitHub</a>
+        </div>
+      </div>
+      <figure class="media media--tall reveal">
+        <video src="media/halo.mp4" poster="media/halo.jpg" width="640" height="800" muted loop playsinline preload="none"></video>
+        <figcaption>Live hand tracking, 19 fps</figcaption>
+      </figure>
+    </section>
+
+    <section id="clap" class="project" data-name="Clap">
+      <div class="copy">
+        <p class="index reveal">04 · Open source</p>
+        <h2 class="reveal">Clap Launcher</h2>
+        <p class="lede reveal">Clap twice. Terminal opens with Claude Code running.</p>
+        <p class="reveal">An always-on listener tuned to ignore desk thumps, typing and calls, so it only fires on a real double clap. The reel about it hit 1.6K views in its first day.</p>
+        <ul class="tags reveal"><li>Node</li><li>Swift</li><li>Core Audio</li></ul>
+        <div class="links reveal">
+          <a class="btn" href="https://github.com/off9rid/clap-launcher">View on GitHub</a>
+          <a class="link" href="https://instagram.com/amirbuildsai">Watch the reel</a>
+        </div>
+      </div>
+      <figure class="media media--wide reveal">
+        <video src="media/clap.mp4" poster="media/clap.jpg" width="864" height="400" muted loop playsinline preload="none"></video>
+        <figcaption>Two claps, laptop wakes up</figcaption>
+      </figure>
+    </section>
+
+    <section id="finlit" class="project" data-name="FinLit">
+      <div class="copy">
+        <p class="index reveal">05 · Web design</p>
+        <h2 class="reveal">FinLit for Youths</h2>
+        <p class="lede reveal">A free financial-literacy program, redesigned.</p>
+        <p class="reveal">I rebuilt the program's site from a stock template into a one-page experience: a 3D coin that flips as you scroll, banknote line patterns and smooth pinned sections.</p>
+        <ul class="tags reveal"><li>three.js</li><li>GSAP</li><li>Lenis</li></ul>
+      </div>
+      <figure class="media media--wide reveal">
+        <img src="media/finlit.jpg" width="1200" height="750" alt="FinLit for Youths homepage: a gold 3D coin with the program logo beside the headline 'Empowering youths through financial literacy'" loading="lazy">
+        <figcaption>The new homepage</figcaption>
+      </figure>
+    </section>
+
+    <section id="cortex" class="project" data-name="Cortex">
+      <div class="copy">
+        <p class="index reveal">06 · Personal</p>
+        <h2 class="reveal">Cortex</h2>
+        <p class="lede reveal">The AI system that runs my day.</p>
+        <p class="reveal">A voice HUD I talk to, a notch app on my Mac, morning briefings, and a phone gate that blocks doomscrolling until my work is done. It stays private because it knows everything about me.</p>
+        <ul class="tags reveal"><li>Voice</li><li>macOS notch app</li><li>Android</li><li>Automation</li></ul>
+        <div class="links reveal">
+          <a class="link" href="https://instagram.com/amirbuildsai">See it on Instagram</a>
+        </div>
+      </div>
+      <figure class="media media--square reveal">
+        <video src="media/cortex.mp4" poster="media/cortex.jpg" width="720" height="720" muted loop playsinline preload="none"></video>
+        <figcaption>The Cortex voice HUD</figcaption>
+      </figure>
+    </section>
+
+    <section id="contact" class="contact" data-name="Contact">
+      <p class="index reveal">07 · Contact</p>
+      <h2 class="reveal">Let's build something.</h2>
+      <p class="reveal">DM me on Instagram, or book a Friday setup for your own Mac.</p>
+      <div class="links links--center reveal">
+        <a class="btn" href="https://instagram.com/amirbuildsai">@amirbuildsai</a>
+        <a class="btn btn--ghost" href="https://meetfriday.vercel.app">Book Friday</a>
+        <a class="btn btn--ghost" href="https://github.com/off9rid">GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>© 2026 Amirali Zhian</span>
+    <span>Built in Toronto</span>
+  </footer>
+</body>
+</html>
