@@ -300,6 +300,55 @@ function textShape(N, text, size, font) {
   }, { size, fitWidth: true, depth: 0.2 });
 }
 
+// Press: a front page (masthead, headline, photo, columns) curled in 3D, with a second paper behind it.
+function newspaper(N) {
+  const page = (g, w, h, front) => {
+    g.fillStyle = "#fff"; g.strokeStyle = "#fff";
+    g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16);
+    if (!front) {
+      for (let y = 120; y < h - 40; y += 34) g.fillRect(40, y, w - 80, 6);
+      return;
+    }
+    g.textAlign = "center"; g.textBaseline = "top";
+    g.font = `900 ${w * 0.15}px Georgia, "Times New Roman", serif`;
+    g.fillText("THE NEWS", w / 2, 34);
+    g.fillRect(36, 158, w - 72, 6); g.fillRect(36, 172, w - 72, 2);
+    g.fillRect(36, 200, w - 72, 34); g.fillRect(36, 246, (w - 72) * 0.72, 34);
+    // photo block, hatched so it reads as an image
+    const px = 36, py = 304, pw = (w - 72) * 0.58, ph = 250;
+    g.lineWidth = 5; g.strokeRect(px, py, pw, ph);
+    g.save(); g.beginPath(); g.rect(px, py, pw, ph); g.clip(); g.lineWidth = 3;
+    for (let k = 0; k < pw + ph; k += 18) { g.beginPath(); g.moveTo(px + k, py); g.lineTo(px + k - ph, py + ph); g.stroke(); }
+    g.restore();
+    // columns of text lines
+    const colW = (w - 72 - 2 * 24) / 3;
+    for (let c = 0; c < 3; c++) {
+      const x0 = 36 + c * (colW + 24);
+      const yStart = c < 2 ? py + ph + 28 : py;
+      for (let y = yStart; y < h - 40; y += 22) g.fillRect(x0, y, colW * ((y + c * 13) % 5 ? 1 : 0.7), 7);
+    }
+  };
+  const nf = Math.floor(N * 0.74);
+  const front = fromCanvas(nf, 700, 900, (g, w, h) => page(g, w, h, true), { size: 3.3, depth: 0.015 });
+  const back = fromCanvas(N - nf, 700, 900, (g, w, h) => page(g, w, h, false), { size: 3.3, depth: 0.015 });
+  if (!front || !back) return null;
+  const out = new Float32Array(N * 3);
+  out.set(front, 0);
+  const c = Math.cos(0.12), sn = Math.sin(0.12);
+  for (let i = 0; i < N - nf; i++) {
+    const x = back[i * 3], y = back[i * 3 + 1];
+    out[(nf + i) * 3] = x * c - y * sn + 0.42;
+    out[(nf + i) * 3 + 1] = x * sn + y * c + 0.18;
+    out[(nf + i) * 3 + 2] = back[i * 3 + 2] - 0.4;
+  }
+  // curl the pages like paper
+  for (let i = 0; i < N; i++) {
+    const x = out[i * 3];
+    out[i * 3 + 2] += 0.16 * x * x - 0.25 * Math.max(0, x - 0.9) ** 2;
+  }
+  return rotate(out, 0.12, -0.42);
+}
+
 async function buildShapes(N) {
   let portrait = null;
   try {
@@ -320,7 +369,7 @@ async function buildShapes(N) {
     textShape(N, "500K+", 4.4, (h) => `800 ${h * 0.8}px Archivo, "Arial Black", sans-serif`) || sphere(N),
     globe(N),
     coin(N),
-    textShape(N, "“”", 3.2, (h) => `700 ${h * 1.5}px Georgia, "Times New Roman", serif`) || sphere(N),
+    newspaper(N) || sphere(N),
     voiceRing(N),
     hand || sphere(N, 1.5),
     clapWave(N),
@@ -336,7 +385,7 @@ const LOOKS = [
   { a: "#3be8ff", b: "#ffb22e", sway: 0.22, scan: 0.25 },
   { a: "#3be8ff", b: "#ffb22e", sway: 1.0, scan: 0.25 },
   { a: "#e9b949", b: "#4fd18b", sway: 0.8, scan: 0.2 },
-  { a: "#ffb22e", b: "#e9fdff", sway: 0.3, scan: 0.25 },
+  { a: "#f2ead8", b: "#ffb22e", sway: 0.45, scan: 0.25 },
   { a: "#ffb22e", b: "#fff1d6", sway: 0.45, scan: 0.2 },
   { a: "#3be8ff", b: "#e9fdff", sway: 0.3, scan: 0.5 },
   { a: "#e9fdff", b: "#3be8ff", sway: 0.35, scan: 0.2 },
