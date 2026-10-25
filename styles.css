@@ -47,8 +47,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline
   background: linear-gradient(var(--ground) 30%, transparent);
 }
 .mark { display: inline-flex; align-items: center; gap: var(--s3); text-decoration: none; color: var(--cyan); }
-.mark img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--cyan); }
-.mark span { color: var(--ink); font: 400 13px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.mark img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--cyan); }
+@media (max-width: 799px) { .mark img { width: 44px; height: 44px; } }
+.mark span { color: var(--ink); font: 400 14px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; }
 .bar nav { display: flex; gap: clamp(var(--s4), 3vw, var(--s6)); }
 .bar nav a { font: 400 13px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-decoration: none; padding: var(--s2) 0; transition: color 200ms var(--ease-out); }
 .bar nav a:hover { color: var(--ink); }
