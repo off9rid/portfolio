@@ -1,6 +1,6 @@
 # Portfolio
 
-My portfolio: **https://amiralizhian.vercel.app**
+Live at: **https://amiralizhian.vercel.app**
 
 A single page where one cloud of 14,000 particles reshapes itself as you scroll: my name, then a sphere, Friday's voice ring, a hand for HALO, a clap waveform, a coin, the Cortex HUD rings and a galaxy to finish.
 
