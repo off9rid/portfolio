@@ -270,9 +270,9 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 
 /* ---------- press ---------- */
-.articles { list-style: none; padding: 0; margin: 0 0 var(--s5); display: grid; gap: var(--s3); }
+.articles { list-style: none; padding: 0; margin: 0 0 var(--s5); display: grid; gap: var(--s2); }
 .articles a {
-  display: grid; gap: var(--s2); padding: var(--s4) var(--s5);
+  display: grid; gap: var(--s1); padding: var(--s3) var(--s5);
   border: 1px solid var(--line); border-radius: var(--r3); background: var(--ground);
   text-decoration: none; transition: border-color 200ms var(--ease-out), transform 250ms var(--ease-out);
 }
